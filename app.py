@@ -11,14 +11,14 @@ st.write("อัปโหลดไฟล์ `.paq` ของคุณเพื�
 
 # 2. ฟังก์ชันสำหรับอ่านและแปลงไฟล์ .paq ทุกรูปแบบ
 def process_datapaq(uploaded_file):
-    # อ่านไฟล์เป็นไบนารีและแปลงเป็นข้อความ (UTF-8 หรือ ANSI)
+    # อ่านไฟล์เป็นไบนารีและแปลงเป็นข้อความ
     raw_bytes = uploaded_file.read()
-        try:
+    try:
         file_text = raw_bytes.decode("utf-8")
     except UnicodeDecodeError:
-        # เปลี่ยนจาก "ansi" เป็น "cp1252" เพื่อให้ใช้งานบนระบบ Streamlit Cloud (Linux) ได้
-        file_text = raw_bytes.decode("cp1252", errors="ignore") 
-
+        # แก้ไขจุดนี้: เปลี่ยนจาก "ansi" เป็น "cp1252" เพื่อรองรับระบบลินุกซ์บน Streamlit Cloud
+        file_text = raw_bytes.decode("cp1252", errors="ignore")
+    
     # --- รูปแบบที่ 1: ตรวจสอบว่าเป็นไฟล์ XML หรือไม่ ---
     if file_text.strip().startswith("<?xml") or "<Data" in file_text:
         try:
@@ -69,15 +69,17 @@ def process_datapaq(uploaded_file):
         df = pd.read_csv(io.StringIO(data_body), sep=None, engine='python') # ค้นหาตัวคั่น (Tab/Comma) อัตโนมัติ
         
         # ปรับชื่อคอลัมน์แรกให้เป็นมาตรฐานคำว่า "Time (s)" เพื่อความง่าย
-        df.rename(columns={df.columns[0]: "Time (s)"}, inplace=True)
+        if not df.empty:
+            df.rename(columns={df.columns[0]: "Time (s)"}, inplace=True)
         return df, "Text/TSV Format"
         
     # --- รูปแบบที่ 3: กรณีที่โครงสร้างไม่ตรงกับเงื่อนไขด้านบนเลย (พยายามอ่านแบบเดาแถว) ---
     try:
         # ข้ามหัวข้อไป 15 บรรทัดแรก (โครงสร้างมาตรฐานส่วนใหญ่)
         uploaded_file.seek(0)
-        df = pd.read_csv(uploaded_file, sep=None, skiprows=15, engine='python', error_bad_lines=False)
-        df.rename(columns={df.columns[0]: "Time (s)"}, inplace=True)
+        df = pd.read_csv(uploaded_file, sep=None, skiprows=15, engine='python')
+        if not df.empty:
+            df.rename(columns={df.columns[0]: "Time (s)"}, inplace=True)
         return df, "Fallback Text Format (Raw)"
     except:
         return None, "Unknown Format"
@@ -122,7 +124,7 @@ if uploaded_file is not None:
             # ตกแต่งกราฟให้สวยงามและส่องข้อมูลได้ง่าย
             fig.update_layout(
                 hovermode="x unified", # แสดงอุณหภูมิทุกเซนเซอร์พร้อมกันเมื่อเอาเมาส์ไปชี้ที่เวลาเดียวกัน
-                xaxis_title="เวลา (วินาที)",
+                xaxis_title="เวลา",
                 yaxis_title="อุณหภูมิ (°C)",
                 legend_title="ตำแหน่งเซนเซอร์",
                 template="plotly_white"
