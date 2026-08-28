@@ -13,11 +13,12 @@ st.write("อัปโหลดไฟล์ `.paq` ของคุณเพื�
 def process_datapaq(uploaded_file):
     # อ่านไฟล์เป็นไบนารีและแปลงเป็นข้อความ (UTF-8 หรือ ANSI)
     raw_bytes = uploaded_file.read()
-    try:
+        try:
         file_text = raw_bytes.decode("utf-8")
     except UnicodeDecodeError:
-        file_text = raw_bytes.decode("ansi", errors="ignore")
-    
+        # เปลี่ยนจาก "ansi" เป็น "cp1252" เพื่อให้ใช้งานบนระบบ Streamlit Cloud (Linux) ได้
+        file_text = raw_bytes.decode("cp1252", errors="ignore") 
+
     # --- รูปแบบที่ 1: ตรวจสอบว่าเป็นไฟล์ XML หรือไม่ ---
     if file_text.strip().startswith("<?xml") or "<Data" in file_text:
         try:
