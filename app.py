@@ -83,11 +83,9 @@ active_furnace = st.sidebar.text_input("ชื่อเตาอบ (Furnace ID)
 st.sidebar.markdown("---")
 st.sidebar.header("📐 ปรับช่วงวินาทีในแต่ละโซนเตา")
 
-# สร้างฟังก์ชันจำลองให้กรอกข้อมูลโซนได้สูงสุด 6 โซน
 FURNACE_ZONES = []
 num_zones = st.sidebar.slider("จำนวนโซนเตาอบที่ต้องการระบุ:", min_value=1, max_value=8, value=5)
 
-# ค่าเริ่มต้นเริ่มต้น (Default values) เผื่อผู้ใช้ขี้เกียจกรอกใหม่
 default_zones = [
     {"name": "Dryer Zo#1", "start": 0, "end": 120, "group": "Dryer"},
     {"name": "Zone 2", "start": 120, "end": 420, "group": "Heating"},
@@ -106,7 +104,6 @@ GROUP_COLORS = {
     "Cooling": "rgba(102, 204, 255, 0.2)"
 }
 
-# ลูปสร้างกล่องรับข้อมูลใน Sidebar แบบสแกนทีละโซน
 for i in range(num_zones):
     with st.sidebar.expander(f"📦 โซนที่ {i+1}: {default_zones[i]['name']}"):
         z_name = st.text_input(f"ชื่อโซน {i+1}", value=default_zones[i]['name'], key=f"name_{i}")
@@ -140,7 +137,6 @@ if uploaded_file is not None:
         
         st.success("📊 คำนวณและกระจายค่าพล็อตร่วมกับตารางแผงควบคุมสำเร็จ!")
         
-        # ส่วนแท็บการแสดงผลกราฟและรายงานตารางข้อมูล
         tab1, tab2, tab3 = st.tabs(["📈 Chart 1: Global Time Profile", "📊 Table Summary", "📉 Chart 2: Aligned Probe Profile"])
         
         with tab1:
@@ -160,7 +156,6 @@ if uploaded_file is not None:
                     )
                 ))
             
-            # วาดแถบสีตามค่าปัจจุบันในแผงควบคุม (Dynamic vrect)
             for z in FURNACE_ZONES:
                 fig1.add_vrect(
                     x0=z["start_sec"]/60.0, x1=z["end_sec"]/60.0, fillcolor=GROUP_COLORS.get(z["group"], "rgba(200,200,200,0.2)"),
@@ -203,4 +198,11 @@ if uploaded_file is not None:
                 p_start_sec = probe_start_info[col]["Start_Sec"]
                 offset_sec = probe_start_info[col]["Offset_Sec"]
                 indiv_elapsed_mins = (df_master["Time_Seconds"] - p_start_sec) / 60.0
+                
+                # แก้ไขจุดนี้: เติมวงเล็บปิดของ np.stack ให้สมบูรณ์เรียบร้อยแล้ว
                 indiv_hover_data = np.stack(
+                    (df_master["Time_HHMMSS"], df_master["Time_Seconds"], np.full(len(df_master), offset_sec)), axis=-1
+                )
+                
+                fig2.add_trace(go.Scatter(
+                    x=indiv_elapsed_mins, y=df_master[col], mode="lines",
